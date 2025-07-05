@@ -2,9 +2,13 @@ import pandas as pd
 import asyncio
 from playwright.async_api import async_playwright
 
-async def scrape_4_players():
+async def scrape_filtered_player_fields():
     team_url = "https://www.espncricinfo.com/team/chennai-super-kings-335974"
     player_data = []
+
+    REQUIRED_FIELDS = [
+        "Full Name", "Born", "Age", "Batting style", "Bowling style", "Playing role"
+    ]
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=False)
@@ -12,7 +16,7 @@ async def scrape_4_players():
         await page.goto(team_url)
         await page.wait_for_timeout(3000)
 
-        # Use exact UL > LI > A selector to get the player list
+        # Get list of players
         player_links = await page.locator(
             "#main-container > div.ds-relative > div > div.ds-flex.ds-space-x-5 > div.ds-grow > div.ds-w-full.ds-bg-fill-content-prime.ds-overflow-hidden.ds-rounded-xl.ds-border.ds-border-line.ds-mb-4 > div > div > div:nth-child(2) > ul > li > a"
         ).all()
@@ -40,32 +44,36 @@ async def scrape_4_players():
                 print(f"⚠️ Info grid not found for {name}, skipping.")
                 continue
 
-            # Get all label-value pairs inside grid
-            grid = page.locator('div.ds-grid.lg\\:ds-grid-cols-3.ds-grid-cols-2.ds-gap-4.ds-mb-8')
-            items = await grid.locator("div").all()
+            data = {field: "nil" for field in REQUIRED_FIELDS}
 
-            info = {}
-            for item in items:
-                spans = await item.locator("span").all()
-                if len(spans) >= 2:
-                    key = (await spans[0].inner_text()).strip()
-                    val = (await spans[1].inner_text()).strip()
-                    info[key] = val
+            for i in range(1, 20):  # look through first 20 blocks
+                selector = f'div.ds-grid.lg\\:ds-grid-cols-3.ds-grid-cols-2.ds-gap-4.ds-mb-8 > div:nth-child({i})'
+                try:
+                    block = page.locator(selector)
+                    spans = await block.locator("span").all()
+                    if len(spans) >= 2:
+                        label = (await spans[0].inner_text()).strip()
+                        value = (await spans[1].inner_text()).strip()
+                        if label in data:
+                            data[label] = value
+                except:
+                    continue
 
             player_data.append({
                 "Player Name": name,
-                "Full Name": info.get("Full Name", ""),
-                "Born": info.get("Born", ""),
-                "Age": info.get("Age", ""),
-                "Batting Style": info.get("Batting style", ""),
-                "Bowling Style": info.get("Bowling style", ""),
-                "Playing Role": info.get("Playing role", ""),
+                "Full Name": data["Full Name"],
+                "Born": data["Born"],
+                "Age": data["Age"],
+                "Batting Style": data["Batting style"],
+                "Bowling Style": data["Bowling style"],
+                "Playing Role": data["Playing role"],
                 "Profile Link": profile_url
             })
 
         await browser.close()
 
-    pd.DataFrame(player_data).to_excel("ipl_2025_csk_4players_info_fixed.xlsx", index=False)
-    print("✅ Saved to ipl_2025_csk_4players_info_fixed.xlsx")
+    pd.DataFrame(player_data).to_excel("ipl_2025_csk_4players_filtered.xlsx", index=False)
+    print("✅ Saved cleaned info to ipl_2025_csk_4players_filtered.xlsx")
 
-asyncio.run(scrape_4_players())
+# Run
+asyncio.run(scrape_filtered_player_fields())
