@@ -1,7 +1,8 @@
 import pandas as pd
 import asyncio
 from playwright.async_api import async_playwright
-
+# load only two team links at a time
+#loading all will lead to access denial from the website
 team_urls = {
     "Chennai Super Kings": "https://www.espncricinfo.com/series/ipl-2025-1449924/chennai-super-kings-squad-1458628/series-squads",
     "Delhi Capitals": "https://www.espncricinfo.com/series/ipl-2025-1449924/delhi-capitals-squad-1458631/series-squads",
@@ -23,12 +24,12 @@ async def scrape_all_teams_players():
         page = await browser.new_page()
 
         for team_name, squad_url in team_urls.items():
-            print(f"🟡 Visiting {team_name} squad page")
+            print(f" Visiting {team_name} squad page !!")
             await page.goto(squad_url)
             try:
                 await page.wait_for_selector("div.ds-p-0", timeout=8000)
             except:
-                print(f"❌ Could not load squad section for {team_name}")
+                print(f"!!! Could not load squad section for {team_name}")
                 continue
 
             all_players = []
@@ -42,17 +43,17 @@ async def scrape_all_teams_players():
                         url = href if href.startswith("http") else "https://www.espncricinfo.com" + href
                         all_players.append((name.strip(), url))
 
-            print(f"✅ {team_name}: Found {len(all_players)} players")
+            print(f" {team_name}: Found {len(all_players)} players")
 
             for name, profile_url in all_players:
-                print(f"🔍 Visiting {name} → {profile_url}")
+                print(f" Visiting {name} → {profile_url} !!")
                 await page.goto(profile_url)
                 try:
                     await page.wait_for_selector(
                         "div.ds-grid.lg\\:ds-grid-cols-3.ds-grid-cols-2.ds-gap-4.ds-mb-8", timeout=5000
                     )
                 except:
-                    print(f"⚠️ Info grid not found for {name}, skipping.")
+                    print(f"!! Info grid not found for {name}, skipping.")
                     continue
 
                 info_items = []
@@ -75,8 +76,7 @@ async def scrape_all_teams_players():
         await browser.close()
 
     pd.DataFrame(player_data).to_excel("ipl_2025_all_team_players_raw.xlsx", index=False)
-    print("✅ Saved to ipl_2025_all_team_players_raw.xlsx")
+    print(" Saved to ipl_2025_all_team_players_raw.xlsx")
 
-# Run it
 if __name__ == "__main__":
     asyncio.run(scrape_all_teams_players())
