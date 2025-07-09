@@ -65,7 +65,7 @@ async def scrape_batting_summary():
     # Save to Excel
     batting_df = pd.DataFrame(batting_data)
     batting_df.to_excel('batting_summary.xlsx', index=False)
-    print("✅ Saved to 'batting_summary.xlsx'")
+    print("Saved to 'batting_summary.xlsx'")
 
 # Entry point
 if __name__ == "__main__":

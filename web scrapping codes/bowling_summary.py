@@ -67,7 +67,7 @@ async def scrape_bowling_summary():
     # Save to Excel
     bowling_df = pd.DataFrame(bowling_data)
     bowling_df.to_excel('bowling_summary.xlsx', index=False)
-    print("✅ Saved to 'bowling_summary.xlsx'")
+    print("Saved to 'bowling_summary.xlsx'")
 
 # Entry point
 if __name__ == "__main__":
